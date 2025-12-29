@@ -1,65 +1,241 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useMemo } from 'react';
+import { db } from '@/lib/instant';
+import { formatDate } from '@/lib/dateUtils';
+import { v4 as uuidv4 } from 'uuid';
+import AuthWrapper from '@/components/AuthWrapper';
+import Header from '@/components/Header';
+import YearGrid from '@/components/YearGrid';
+import EventModal from '@/components/EventModal';
+import CategoryModal from '@/components/CategoryModal';
+import DayDetailModal from '@/components/DayDetailModal';
+import type { Event, Category } from '@/lib/instant';
 
 export default function Home() {
+  const { user } = db.useAuth();
+  const currentYear = new Date().getFullYear();
+  
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [visibleCategoryIds, setVisibleCategoryIds] = useState<Set<string>>(new Set());
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isDayDetailModalOpen, setIsDayDetailModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Query categories and events
+  const { data, isLoading } = db.useQuery(
+    user
+      ? {
+          categories: {},
+          events: {},
+        }
+      : ({} as any)
+  );
+
+  const allCategories: Category[] = (data?.categories as Category[]) || [];
+  const allEvents: Event[] = (data?.events as Event[]) || [];
+
+  // Filter user's categories
+  const categories = allCategories.filter(c => c.userId === user?.id);
+  
+  // Filter user's events for selected year
+  const events = allEvents.filter(e => {
+    if (e.userId !== user?.id) return false;
+    return e.date >= `${selectedYear}-01-01` && e.date <= `${selectedYear}-12-31`;
+  });
+
+  // Initialize visible categories when categories load
+  useMemo(() => {
+    if (categories.length > 0 && visibleCategoryIds.size === 0) {
+      setVisibleCategoryIds(new Set(categories.map(c => c.id)));
+    }
+  }, [categories, visibleCategoryIds.size]);
+
+  // Event handlers
+  const handleSaveEvent = (eventData: Partial<Event>) => {
+    if (!user) return;
+
+    if (eventData.id) {
+      // Update existing event
+      (db.transact as any)(
+        (db.tx as any).events[eventData.id].update({
+          title: eventData.title!,
+          description: eventData.description,
+          date: eventData.date!,
+          endDate: eventData.endDate,
+          categoryId: eventData.categoryId!,
+          updatedAt: Date.now(),
+        })
+      );
+    } else {
+      // Create new event
+      const newEvent = {
+        id: uuidv4(),
+        title: eventData.title!,
+        description: eventData.description,
+        date: eventData.date!,
+        endDate: eventData.endDate,
+        categoryId: eventData.categoryId!,
+        userId: user.id,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      (db.transact as any)((db.tx as any).events[newEvent.id].update(newEvent));
+    }
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    (db.transact as any)((db.tx as any).events[eventId].delete());
+  };
+
+  const handleSaveCategory = (categoryData: Partial<Category>) => {
+    if (!user) return;
+
+    if (categoryData.id) {
+      // Update existing category
+      (db.transact as any)(
+        (db.tx as any).categories[categoryData.id].update({
+          name: categoryData.name!,
+          color: categoryData.color!,
+        })
+      );
+    } else {
+      // Create new category
+      const newCategory = {
+        id: uuidv4(),
+        name: categoryData.name!,
+        color: categoryData.color!,
+        userId: user.id,
+        createdAt: Date.now(),
+      };
+      (db.transact as any)((db.tx as any).categories[newCategory.id].update(newCategory));
+      setVisibleCategoryIds(prev => new Set([...prev, newCategory.id]));
+    }
+  };
+
+  const handleDeleteCategory = (categoryId: string) => {
+    (db.transact as any)((db.tx as any).categories[categoryId].delete());
+    setVisibleCategoryIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(categoryId);
+      return newSet;
+    });
+  };
+
+  const handleToggleCategory = (categoryId: string) => {
+    setVisibleCategoryIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    setIsDayDetailModalOpen(true);
+  };
+
+  const handleAddEvent = () => {
+    setSelectedEvent(null);
+    setIsEventModalOpen(true);
+  };
+
+  const handleEditEvent = (event: Event) => {
+    setSelectedEvent(event);
+    setIsEventModalOpen(true);
+    setIsDayDetailModalOpen(false);
+  };
+
+  const selectedDateEvents = useMemo(() => {
+    if (!selectedDate) return [];
+    const dateStr = formatDate(selectedDate);
+    return events.filter(e => e.date === dateStr);
+  }, [selectedDate, events]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <AuthWrapper>
+      <div className="min-h-screen bg-neutral-50">
+        <Header
+          year={selectedYear}
+          onYearChange={setSelectedYear}
+          categories={categories}
+          visibleCategoryIds={visibleCategoryIds}
+          onToggleCategory={handleToggleCategory}
+          onAddCategory={() => {
+            setSelectedCategory(null);
+            setIsCategoryModalOpen(true);
+          }}
+          onEditCategory={(category) => {
+            setSelectedCategory(category);
+            setIsCategoryModalOpen(true);
+          }}
+          onAddEvent={handleAddEvent}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        <main className="max-w-[1800px] mx-auto px-2 py-2">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-stone-300"></div>
+            </div>
+          ) : (
+            <YearGrid
+              year={selectedYear}
+              events={events}
+              categories={categories}
+              visibleCategoryIds={visibleCategoryIds}
+              onDayClick={handleDayClick}
+              onEventClick={handleEditEvent}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+          )}
+        </main>
+
+        <EventModal
+          isOpen={isEventModalOpen}
+          onClose={() => {
+            setIsEventModalOpen(false);
+            setSelectedEvent(null);
+          }}
+          onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
+          event={selectedEvent}
+          categories={categories}
+          selectedDate={selectedDate}
+        />
+
+        <CategoryModal
+          isOpen={isCategoryModalOpen}
+          onClose={() => {
+            setIsCategoryModalOpen(false);
+            setSelectedCategory(null);
+          }}
+          onSave={handleSaveCategory}
+          onDelete={handleDeleteCategory}
+          category={selectedCategory}
+        />
+
+        <DayDetailModal
+          isOpen={isDayDetailModalOpen}
+          onClose={() => {
+            setIsDayDetailModalOpen(false);
+            setSelectedDate(null);
+          }}
+          date={selectedDate}
+          events={selectedDateEvents}
+          categories={categories}
+          onEditEvent={handleEditEvent}
+          onAddEvent={() => {
+            setIsDayDetailModalOpen(false);
+            handleAddEvent();
+          }}
+        />
+      </div>
+    </AuthWrapper>
   );
 }
