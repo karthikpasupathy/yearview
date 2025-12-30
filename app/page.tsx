@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/instant';
 import { formatDate } from '@/lib/dateUtils';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,6 +10,7 @@ import YearGrid from '@/components/YearGrid';
 import EventModal from '@/components/EventModal';
 import CategoryModal from '@/components/CategoryModal';
 import DayDetailModal from '@/components/DayDetailModal';
+import GoogleCalendarSync from '@/components/GoogleCalendarSync';
 import type { Event, Category } from '@/lib/instant';
 
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [googleCalendarCategoryId, setGoogleCalendarCategoryId] = useState<string | null>(null);
 
   // Query categories and events
   const { data, isLoading } = db.useQuery(
@@ -41,16 +43,27 @@ export default function Home() {
   // Filter user's categories
   const categories = allCategories.filter(c => c.userId === user?.id);
   
+  // Find or track Google Calendar category
+  useEffect(() => {
+    if (user) {
+      const googleCat = categories.find(c => c.name === 'Google Calendar');
+      if (googleCat && googleCat.id !== googleCalendarCategoryId) {
+        setGoogleCalendarCategoryId(googleCat.id);
+      }
+    }
+  }, [categories, user, googleCalendarCategoryId]);
+  
   // Filter user's events for selected year
   const events = allEvents.filter(e => {
     if (e.userId !== user?.id) return false;
     return e.date >= `${selectedYear}-01-01` && e.date <= `${selectedYear}-12-31`;
   });
 
-  // Initialize visible categories when categories load
-  useMemo(() => {
+  // Initialize visible categories when categories load (exclude Google Calendar by default)
+  useEffect(() => {
     if (categories.length > 0 && visibleCategoryIds.size === 0) {
-      setVisibleCategoryIds(new Set(categories.map(c => c.id)));
+      const nonGoogleCategories = categories.filter(c => c.name !== 'Google Calendar');
+      setVisibleCategoryIds(new Set(nonGoogleCategories.map(c => c.id)));
     }
   }, [categories, visibleCategoryIds.size]);
 
@@ -125,6 +138,53 @@ export default function Home() {
     });
   };
 
+  const handleImportGoogleEvents = (googleEvents: Partial<Event>[], categoryId: string) => {
+    if (!user) return;
+
+    // First, delete all existing Google Calendar events
+    const existingGoogleEvents = events.filter(e => e.categoryId === categoryId);
+    existingGoogleEvents.forEach(event => {
+      (db.transact as any)((db.tx as any).events[event.id].delete());
+    });
+
+    // Then import new events
+    googleEvents.forEach(eventData => {
+      const newEvent = {
+        id: eventData.id!,
+        title: eventData.title!,
+        description: eventData.description,
+        date: eventData.date!,
+        endDate: eventData.endDate,
+        categoryId: eventData.categoryId!,
+        userId: user.id,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      (db.transact as any)((db.tx as any).events[newEvent.id].update(newEvent));
+    });
+  };
+
+  const handleCreateGoogleCategory = (): string => {
+    if (!user) return '';
+    
+    // Check if category already exists
+    const existingCat = categories.find(c => c.name === 'Google Calendar');
+    if (existingCat) return existingCat.id;
+    
+    // Create new Google Calendar category
+    const newCategory = {
+      id: uuidv4(),
+      name: 'Google Calendar',
+      color: '#4285F4', // Google blue
+      userId: user.id,
+      createdAt: Date.now(),
+    };
+    (db.transact as any)((db.tx as any).categories[newCategory.id].update(newCategory));
+    setGoogleCalendarCategoryId(newCategory.id);
+    // Don't add to visible by default
+    return newCategory.id;
+  };
+
   const handleToggleCategory = (categoryId: string) => {
     setVisibleCategoryIds(prev => {
       const newSet = new Set(prev);
@@ -178,6 +238,17 @@ export default function Home() {
           }}
           onAddEvent={handleAddEvent}
         />
+
+        <div className="max-w-[1800px] mx-auto px-2 py-4">
+          <div className="mb-4 flex justify-end">
+            <GoogleCalendarSync
+              year={selectedYear}
+              onImportEvents={handleImportGoogleEvents}
+              googleCalendarCategoryId={googleCalendarCategoryId}
+              onCreateGoogleCategory={handleCreateGoogleCategory}
+            />
+          </div>
+        </div>
 
         <main className="max-w-[1800px] mx-auto px-2 py-2">
           {isLoading ? (
