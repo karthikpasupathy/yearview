@@ -76,6 +76,7 @@ export default function GoogleCalendarSync({
           date: startDate,
           endDate: endDate !== startDate ? endDate : undefined,
           categoryId: categoryId,
+          googleEventId: gEvent.id,
         };
       });
 

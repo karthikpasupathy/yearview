@@ -22,6 +22,7 @@ export type Event = {
   userId: string;
   createdAt: number;
   updatedAt: number;
+  googleEventId?: string;
 };
 
 // Initialize InstantDB (without schema for now - schema is managed in InstantDB dashboard)
