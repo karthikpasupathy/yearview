@@ -21,7 +21,7 @@ import { useCalendarActions } from '@/hooks/useCalendarActions';
 
 function CalendarApp() {
   const state = useCalendarState();
-  const { categories, events, isLoading } = useCalendarData(state.selectedYear);
+  const { categories, events, customHolidays, isLoading } = useCalendarData(state.selectedYear);
 
   // Initialize hooks
   useVisibleCategoriesInit(categories, state.visibleCategoryIds, state.setVisibleCategoryIds);
@@ -62,6 +62,7 @@ function CalendarApp() {
             events={events}
             categories={categories}
             visibleCategoryIds={state.visibleCategoryIds}
+            customHolidays={customHolidays}
             onDayClick={actions.handleDayClick}
             onEventClick={actions.handleEditEvent}
             showHolidays={state.showHolidays}
@@ -95,8 +96,11 @@ function CalendarApp() {
         date={state.selectedDate}
         events={selectedDateEvents}
         categories={categories}
+        customHolidays={customHolidays}
         onEditEvent={actions.handleEditEvent}
         onAddEvent={actions.handleAddEventFromDayDetail}
+        onSaveHoliday={actions.handleSaveCustomHoliday}
+        onDeleteHoliday={actions.handleDeleteCustomHoliday}
       />
 
       <DisplayOptionsModal

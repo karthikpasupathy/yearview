@@ -1,6 +1,8 @@
 'use client';
 
-import { Event, Category } from '@/lib/instant';
+import { useState, useEffect } from 'react';
+
+import { Event, Category, CustomHoliday } from '@/lib/instant';
 import { getDayOfWeek, getMonthName, formatDate } from '@/lib/dateUtils';
 import { getHolidayName, isExtendedWeekend, getExtendedWeekendHolidayName } from '@/lib/holidays';
 import { useFocusTrap } from '@/hooks/useAccessibility';
@@ -11,8 +13,11 @@ interface DayDetailModalProps {
   date: Date | null;
   events: Event[];
   categories: Category[];
+  customHolidays?: CustomHoliday[];
   onEditEvent: (event: Event) => void;
   onAddEvent: () => void;
+  onSaveHoliday?: (holiday: Partial<CustomHoliday>) => void;
+  onDeleteHoliday?: (id: string) => void;
 }
 
 export default function DayDetailModal({
@@ -21,10 +26,52 @@ export default function DayDetailModal({
   date,
   events,
   categories,
+  customHolidays = [],
   onEditEvent,
   onAddEvent,
+  onSaveHoliday,
+  onDeleteHoliday,
 }: DayDetailModalProps) {
   const focusTrapRef = useFocusTrap(isOpen, onClose);
+
+  // Find if there is a custom holiday for this date
+  const dateStr = date ? formatDate(date) : '';
+  const currentHoliday = customHolidays.find(h => h.date === dateStr);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    if (currentHoliday) {
+      setNote(currentHoliday.note);
+    } else {
+      setNote('');
+    }
+  }, [currentHoliday]);
+
+  const handleHolidayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!date || !onSaveHoliday || !onDeleteHoliday) return;
+
+    if (e.target.checked) {
+      // Create new holiday
+      onSaveHoliday({
+        date: dateStr,
+        note: 'Custom Holiday'
+      });
+    } else {
+      // Delete existing holiday
+      if (currentHoliday) {
+        onDeleteHoliday(currentHoliday.id);
+      }
+    }
+  };
+
+  const handleSaveNote = () => {
+    if (!date || !onSaveHoliday || !currentHoliday) return;
+    onSaveHoliday({
+      id: currentHoliday.id,
+      date: dateStr,
+      note: note
+    });
+  };
 
   if (!isOpen || !date) return null;
 
@@ -74,6 +121,43 @@ export default function DayDetailModal({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+          </div>
+
+          {/* Custom Holiday Section */}
+          <div className="mt-4 pt-4 border-t border-neutral-100">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="is-holiday"
+                checked={!!currentHoliday}
+                onChange={handleHolidayChange}
+                className="rounded border-neutral-300 text-red-600 focus:ring-red-500"
+              />
+              <label htmlFor="is-holiday" className="text-sm font-medium text-stone-700">
+                Mark as Holiday
+              </label>
+            </div>
+
+            {currentHoliday && (
+              <div className="mt-3">
+                <label className="block text-xs font-medium text-stone-500 mb-1">Holiday Note</label>
+                <div className="flex gap-2">
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                    placeholder="Enter holiday name..."
+                    rows={1}
+                  />
+                  <button
+                    onClick={handleSaveNote}
+                    className="px-4 py-2 bg-stone-800 text-white text-sm rounded-lg hover:bg-stone-700 transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

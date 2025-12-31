@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { db } from '@/lib/instant';
 import { v4 as uuidv4 } from 'uuid';
-import type { Event, Category } from '@/lib/instant';
+import type { Event, Category, CustomHoliday } from '@/lib/instant';
 import { useToast } from '@/contexts/ToastContext';
 import type { CalendarState } from './useCalendarState';
 import { GOOGLE_CALENDAR_CATEGORY_NAME, GOOGLE_CALENDAR_COLOR } from '@/lib/constants';
@@ -296,6 +296,47 @@ export function useCalendarActions(
         }
     }, [events, state]);
 
+    const handleSaveCustomHoliday = useCallback((holidayData: Partial<CustomHoliday>) => {
+        if (!user) return;
+
+        try {
+            if (holidayData.id) {
+                // Update existing holiday
+                (db.transact as any)(
+                    (db.tx as any).customHolidays[holidayData.id].update({
+                        date: holidayData.date!,
+                        note: holidayData.note!,
+                    })
+                );
+                showToast('Holiday updated', 'success');
+            } else {
+                // Create new holiday
+                const newHoliday = {
+                    id: uuidv4(),
+                    date: holidayData.date!,
+                    note: holidayData.note!,
+                    userId: user.id,
+                    createdAt: Date.now(),
+                };
+                (db.transact as any)((db.tx as any).customHolidays[newHoliday.id].update(newHoliday));
+                showToast('Holiday marked', 'success');
+            }
+        } catch (error) {
+            showToast('Failed to save holiday', 'error');
+            console.error('Error saving holiday:', error);
+        }
+    }, [user, showToast]);
+
+    const handleDeleteCustomHoliday = useCallback((holidayId: string) => {
+        try {
+            (db.transact as any)((db.tx as any).customHolidays[holidayId].delete());
+            showToast('Holiday removed', 'info');
+        } catch (error) {
+            showToast('Failed to remove holiday', 'error');
+            console.error('Error removing holiday:', error);
+        }
+    }, [showToast]);
+
     const handleAddEventFromDayDetail = useCallback(() => {
         state.setIsDayDetailModalOpen(false);
         state.setSelectedEvent(null);
@@ -320,5 +361,7 @@ export function useCalendarActions(
         handleCloseCategoryModal,
         handleCloseDayDetailModal,
         handleAddEventFromDayDetail,
+        handleSaveCustomHoliday,
+        handleDeleteCustomHoliday,
     };
 }

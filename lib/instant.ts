@@ -25,5 +25,13 @@ export type Event = {
   googleEventId?: string;
 };
 
+export type CustomHoliday = {
+  id: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  note: string;
+  userId: string;
+  createdAt: number;
+};
+
 // Initialize InstantDB (without schema for now - schema is managed in InstantDB dashboard)
 export const db = init({ appId: APP_ID });

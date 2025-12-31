@@ -1,6 +1,6 @@
 'use client';
 
-import { Event, Category } from '@/lib/instant';
+import { Event, Category, CustomHoliday } from '@/lib/instant';
 import { isToday, getDayOfWeek, formatDate } from '@/lib/dateUtils';
 import { isHoliday, isExtendedWeekend, getHolidayName, getExtendedWeekendHolidayName } from '@/lib/holidays';
 
@@ -9,6 +9,7 @@ interface DayCellProps {
   events: Event[];
   categories: Category[];
   visibleCategoryIds: Set<string>;
+  customHolidays?: CustomHoliday[];
   onDayClick: (date: Date) => void;
   showHolidays?: boolean;
   showLongWeekends?: boolean;
@@ -17,7 +18,9 @@ interface DayCellProps {
 
 export default function DayCell({
   date,
+  visibleCategoryIds,
   onDayClick,
+  customHolidays = [],
   showHolidays = true,
   showLongWeekends = true,
   showPastDatesAsGray = true,
@@ -33,10 +36,10 @@ export default function DayCell({
   const isPast = date < today;
 
   // Holiday checks - only if showHolidays is enabled
-  const isHolidayDay = showHolidays && isHoliday(date);
-  const isExtendedWeekendDay = showLongWeekends && isExtendedWeekend(date);
-  const holidayName = showHolidays ? getHolidayName(date) : null;
-  const extendedWeekendName = showLongWeekends ? getExtendedWeekendHolidayName(date) : null;
+  const isHolidayDay = showHolidays && isHoliday(date, customHolidays);
+  const isExtendedWeekendDay = showLongWeekends && isExtendedWeekend(date, customHolidays);
+  const holidayName = showHolidays ? getHolidayName(date, customHolidays) : null;
+  const extendedWeekendName = showLongWeekends ? getExtendedWeekendHolidayName(date, customHolidays) : null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {

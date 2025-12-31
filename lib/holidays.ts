@@ -13,6 +13,12 @@ interface Holiday {
     date: string; // YYYY-MM-DD format
 }
 
+export interface CustomHoliday {
+    id: string;
+    date: string;
+    note: string;
+}
+
 // US Major Holidays for 2025 and 2026
 const US_HOLIDAYS: Record<number, Holiday[]> = {
     2025: [
@@ -71,43 +77,45 @@ const INDIA_HOLIDAYS: Record<number, Holiday[]> = {
 };
 
 /**
- * Get all holidays for a given year (combined US + India)
+ * Get all holidays for a given year (combined US + India + Custom)
  */
-export function getHolidaysForYear(year: number): Holiday[] {
+export function getHolidaysForYear(year: number, customHolidays: CustomHoliday[] = []): Holiday[] {
     const usHolidays = US_HOLIDAYS[year] || [];
     const indiaHolidays = INDIA_HOLIDAYS[year] || [];
-    return [...usHolidays, ...indiaHolidays];
+
+    // Convert custom holidays to Holiday format
+    const custom: Holiday[] = customHolidays
+        .filter(h => new Date(h.date).getFullYear() === year)
+        .map(h => ({ name: h.note, date: h.date }));
+
+    return [...usHolidays, ...indiaHolidays, ...custom];
 }
 
 /**
  * Check if a date is a holiday
  */
-export function isHoliday(date: Date): boolean {
+export function isHoliday(date: Date, customHolidays: CustomHoliday[] = []): boolean {
     const dateStr = formatDate(date);
     const year = date.getFullYear();
-    const holidays = getHolidaysForYear(year);
+    const holidays = getHolidaysForYear(year, customHolidays);
     return holidays.some(h => h.date === dateStr);
 }
 
 /**
  * Get the holiday name for a date (if it's a holiday)
  */
-export function getHolidayName(date: Date): string | null {
+export function getHolidayName(date: Date, customHolidays: CustomHoliday[] = []): string | null {
     const dateStr = formatDate(date);
     const year = date.getFullYear();
-    const holidays = getHolidaysForYear(year);
+    const holidays = getHolidaysForYear(year, customHolidays);
     const holiday = holidays.find(h => h.date === dateStr);
     return holiday ? holiday.name : null;
 }
 
 /**
- * Check if a date is part of an extended weekend due to a holiday
- * 
- * Rules:
- * - If a holiday falls on Friday, Saturday and Sunday are extended weekend
  * - If a holiday falls on Monday, Saturday and Sunday before it are extended weekend
  */
-export function isExtendedWeekend(date: Date): boolean {
+export function isExtendedWeekend(date: Date, customHolidays: CustomHoliday[] = []): boolean {
     const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
 
     // Only weekends can be extended weekends
@@ -116,7 +124,7 @@ export function isExtendedWeekend(date: Date): boolean {
     }
 
     const year = date.getFullYear();
-    const holidays = getHolidaysForYear(year);
+    const holidays = getHolidaysForYear(year, customHolidays);
 
     for (const holiday of holidays) {
         const holidayDate = new Date(holiday.date + 'T00:00:00');
@@ -153,7 +161,7 @@ export function isExtendedWeekend(date: Date): boolean {
 /**
  * Get the name of the holiday that caused this extended weekend
  */
-export function getExtendedWeekendHolidayName(date: Date): string | null {
+export function getExtendedWeekendHolidayName(date: Date, customHolidays: CustomHoliday[] = []): string | null {
     const dayOfWeek = date.getDay();
 
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
@@ -161,7 +169,7 @@ export function getExtendedWeekendHolidayName(date: Date): string | null {
     }
 
     const year = date.getFullYear();
-    const holidays = getHolidaysForYear(year);
+    const holidays = getHolidaysForYear(year, customHolidays);
 
     for (const holiday of holidays) {
         const holidayDate = new Date(holiday.date + 'T00:00:00');

@@ -1,6 +1,6 @@
 'use client';
 
-import { Event, Category } from '@/lib/instant';
+import { Event, Category, CustomHoliday } from '@/lib/instant';
 import { getAllDatesInYear, formatDate, getMonthName, parseDateString } from '@/lib/dateUtils';
 import DayCell from './DayCell';
 import { useMemo } from 'react';
@@ -10,6 +10,7 @@ interface YearGridProps {
   events: Event[];
   categories: Category[];
   visibleCategoryIds: Set<string>;
+  customHolidays?: CustomHoliday[];
   onDayClick: (date: Date) => void;
   onEventClick: (event: Event) => void;
   showHolidays?: boolean;
@@ -22,6 +23,7 @@ export default function YearGrid({
   events,
   categories,
   visibleCategoryIds,
+  customHolidays = [],
   onDayClick,
   onEventClick,
   showHolidays = true,
@@ -119,6 +121,7 @@ export default function YearGrid({
                       events={[]}
                       categories={categories}
                       visibleCategoryIds={visibleCategoryIds}
+                      customHolidays={customHolidays}
                       onDayClick={onDayClick}
                       showHolidays={showHolidays}
                       showLongWeekends={showLongWeekends}
