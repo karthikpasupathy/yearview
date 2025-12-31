@@ -3,6 +3,8 @@
 import { Event, Category } from '@/lib/instant';
 import { formatDate } from '@/lib/dateUtils';
 import { useState, useEffect } from 'react';
+import { useToast } from '@/contexts/ToastContext';
+import { useFocusTrap } from '@/hooks/useAccessibility';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -23,11 +25,15 @@ export default function EventModal({
   categories,
   selectedDate,
 }: EventModalProps) {
+  const { showToast, showConfirm } = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [categoryId, setCategoryId] = useState('');
+
+  // Focus trap must be called unconditionally to maintain hook order
+  const focusTrapRef = useFocusTrap(isOpen, onClose);
 
   useEffect(() => {
     if (event) {
@@ -55,15 +61,15 @@ export default function EventModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim() || !date || !categoryId) {
-      alert('Please fill in all required fields');
+      showToast('Please fill in all required fields', 'warning');
       return;
     }
 
     // Validate end date is after start date
     if (endDate && endDate < date) {
-      alert('End date must be after start date');
+      showToast('End date must be after start date', 'warning');
       return;
     }
 
@@ -80,18 +86,28 @@ export default function EventModal({
   };
 
   const handleDelete = () => {
-    if (event && onDelete && confirm('Are you sure you want to delete this event?')) {
-      onDelete(event.id);
-      onClose();
+    if (event && onDelete) {
+      showConfirm('Are you sure you want to delete this event?', () => {
+        onDelete(event.id);
+        onClose();
+      });
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl border border-neutral-300 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="event-modal-title"
+    >
+      <div
+        ref={focusTrapRef}
+        className="bg-white rounded-3xl border border-neutral-300 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto shadow-xl"
+      >
         <div className="p-6 border-b border-neutral-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight text-neutral-900">
+            <h2 id="event-modal-title" className="text-2xl font-semibold tracking-tight text-neutral-900">
               {event ? 'Edit Event' : 'Add Event'}
             </h2>
             <button
@@ -199,7 +215,7 @@ export default function EventModal({
             ) : (
               <div></div>
             )}
-            
+
             <div className="flex space-x-3">
               <button
                 type="button"

@@ -1,7 +1,8 @@
 'use client';
 
 import { Event, Category } from '@/lib/instant';
-import { formatDate, getDayOfWeek, getMonthName } from '@/lib/dateUtils';
+import { getDayOfWeek, getMonthName } from '@/lib/dateUtils';
+import { useFocusTrap } from '@/hooks/useAccessibility';
 
 interface DayDetailModalProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export default function DayDetailModal({
   onEditEvent,
   onAddEvent,
 }: DayDetailModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen, onClose);
+
   if (!isOpen || !date) return null;
 
   const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
@@ -29,12 +32,20 @@ export default function DayDetailModal({
   const monthName = getMonthName(date.getMonth());
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm">
-      <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-neutral-200/50 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="day-detail-modal-title"
+    >
+      <div
+        ref={focusTrapRef}
+        className="bg-white/95 backdrop-blur-md rounded-3xl border border-neutral-200/50 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
         <div className="p-6 border-b border-neutral-200/50">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-light tracking-tight text-stone-700">
+              <h2 id="day-detail-modal-title" className="text-3xl font-light tracking-tight text-stone-700">
                 {monthName} {date.getDate()}, {date.getFullYear()}
               </h2>
               <p className="text-stone-500 mt-1 font-light">{dayOfWeek}</p>
@@ -126,7 +137,7 @@ export default function DayDetailModal({
                   </div>
                 );
               })}
-              
+
               <button
                 onClick={onAddEvent}
                 className="w-full py-3 border border-dashed border-neutral-300 text-stone-500 rounded-2xl font-light hover:border-neutral-400 hover:text-stone-700 hover:bg-stone-50 transition-all"

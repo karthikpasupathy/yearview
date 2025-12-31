@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# YearMap 📅
 
-## Getting Started
+A beautiful annual calendar app to visualize and organize your entire year. Built with Next.js, InstantDB, and Tailwind CSS.
 
-First, run the development server:
+![YearMap Screenshot](https://via.placeholder.com/800x400?text=YearMap+Screenshot)
+
+## Features
+
+- 📆 **Full Year View** - See all 365 days at a glance
+- 🏷️ **Categories** - Organize events with color-coded categories
+- 📅 **Multi-day Events** - Create events that span multiple days
+- 🔗 **Google Calendar Sync** - Import events from Google Calendar
+- 🔐 **Magic Link Auth** - Passwordless authentication via email
+- 📱 **Responsive Design** - Works on desktop and mobile
+- ♿ **Accessible** - Keyboard navigation and screen reader support
+
+## Quick Start
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/karthikpasupathy/yearmap.git
+cd yearmap
+npm install
+```
+
+### 2. Set up InstantDB
+
+1. Create a free account at [InstantDB](https://instantdb.com)
+2. Create a new app in the dashboard
+3. Copy your App ID
+
+### 3. Configure environment variables
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local` and add your InstantDB App ID:
+
+```
+NEXT_PUBLIC_INSTANT_APP_ID=your_app_id_here
+```
+
+### 4. Set up InstantDB permissions
+
+In your InstantDB dashboard, go to **Permissions** and add:
+
+```json
+{
+  "categories": {
+    "allow": {
+      "view": "data.userId == auth.id",
+      "create": "auth.id != null && data.userId == auth.id",
+      "update": "data.userId == auth.id",
+      "delete": "data.userId == auth.id"
+    }
+  },
+  "events": {
+    "allow": {
+      "view": "data.userId == auth.id",
+      "create": "auth.id != null && data.userId == auth.id",
+      "update": "data.userId == auth.id",
+      "delete": "data.userId == auth.id"
+    }
+  }
+}
+```
+
+### 5. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to see your calendar!
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Google Calendar Integration (Optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+To enable Google Calendar sync:
 
-## Learn More
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a new project or select an existing one
+3. Enable the Google Calendar API
+4. Create OAuth 2.0 credentials (Web application)
+5. Add your domain to authorized JavaScript origins
+6. Add your `NEXT_PUBLIC_GOOGLE_CLIENT_ID` to `.env.local`
 
-To learn more about Next.js, take a look at the following resources:
+## Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework**: [Next.js 16](https://nextjs.org) (App Router)
+- **Database**: [InstantDB](https://instantdb.com) (Real-time sync)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com)
+- **Auth**: InstantDB Magic Link
+- **Language**: TypeScript
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+yearmap/
+├── app/                # Next.js app router pages
+├── components/         # React components
+├── contexts/           # React contexts (Toast)
+├── hooks/              # Custom React hooks
+├── lib/                # Utilities and configurations
+└── public/             # Static assets
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Contributing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Built with [InstantDB](https://instantdb.com) for real-time data sync
+- Icons from [Heroicons](https://heroicons.com)
+- Fonts from [Google Fonts](https://fonts.google.com)

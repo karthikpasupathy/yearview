@@ -40,18 +40,20 @@ function AuthScreen() {
   const [code, setCode] = useState('');
   const [sentEmail, setSentEmail] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
-    
+
     setIsSubmitting(true);
+    setError(null);
     try {
       await db.auth.sendMagicCode({ email });
       setSentEmail(true);
-    } catch (error) {
-      console.error('Error sending magic code:', error);
-      alert('Failed to send magic code. Please try again.');
+    } catch (err) {
+      console.error('Error sending magic code:', err);
+      setError('Failed to send magic code. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -60,13 +62,14 @@ function AuthScreen() {
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code) return;
-    
+
     setIsSubmitting(true);
+    setError(null);
     try {
       await db.auth.signInWithMagicCode({ email, code });
-    } catch (error) {
-      console.error('Error verifying code:', error);
-      alert('Invalid code. Please check and try again.');
+    } catch (err) {
+      console.error('Error verifying code:', err);
+      setError('Invalid code. Please check and try again.');
       setIsSubmitting(false);
     }
   };
@@ -105,6 +108,12 @@ function AuthScreen() {
                   maxLength={6}
                 />
               </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-light">
+                  {error}
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -165,6 +174,12 @@ function AuthScreen() {
                 required
               />
             </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-light">
+                {error}
+              </div>
+            )}
 
             <button
               type="submit"

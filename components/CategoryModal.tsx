@@ -3,6 +3,8 @@
 import { Category } from '@/lib/instant';
 import { CATEGORY_COLORS } from '@/lib/colors';
 import { useState, useEffect } from 'react';
+import { useToast } from '@/contexts/ToastContext';
+import { useFocusTrap } from '@/hooks/useAccessibility';
 
 interface CategoryModalProps {
   isOpen: boolean;
@@ -19,8 +21,12 @@ export default function CategoryModal({
   onDelete,
   category,
 }: CategoryModalProps) {
+  const { showToast } = useToast();
   const [name, setName] = useState('');
   const [color, setColor] = useState<string>(CATEGORY_COLORS[0].value);
+
+  // Focus trap must be called unconditionally to maintain hook order
+  const focusTrapRef = useFocusTrap(isOpen, onClose);
 
   useEffect(() => {
     if (category) {
@@ -36,9 +42,9 @@ export default function CategoryModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) {
-      alert('Please enter a category name');
+      showToast('Please enter a category name', 'warning');
       return;
     }
 
@@ -52,18 +58,26 @@ export default function CategoryModal({
   };
 
   const handleDelete = () => {
-    if (category && onDelete && confirm(`Are you sure you want to delete "${category.name}"? All events in this category will remain but won't be visible until assigned to another category.`)) {
+    if (category && onDelete) {
       onDelete(category.id);
       onClose();
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm">
-      <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-neutral-200/50 max-w-md w-full mx-4">
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="category-modal-title"
+    >
+      <div
+        ref={focusTrapRef}
+        className="bg-white/95 backdrop-blur-md rounded-3xl border border-neutral-200/50 max-w-md w-full mx-4"
+      >
         <div className="p-6 border-b border-neutral-200/50">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-light tracking-tight text-stone-700">
+            <h2 id="category-modal-title" className="text-2xl font-light tracking-tight text-stone-700">
               {category ? 'Edit Category' : 'Add Category'}
             </h2>
             <button
@@ -131,7 +145,7 @@ export default function CategoryModal({
             ) : (
               <div></div>
             )}
-            
+
             <div className="flex space-x-3">
               <button
                 type="button"

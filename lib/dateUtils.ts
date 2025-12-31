@@ -1,4 +1,11 @@
 /**
+ * Date utility functions with timezone-safe operations
+ * 
+ * IMPORTANT: Event dates are stored as YYYY-MM-DD strings representing LOCAL dates.
+ * All parsing should create local Date objects, not UTC.
+ */
+
+/**
  * Check if a year is a leap year
  */
 export function isLeapYear(year: number): boolean {
@@ -13,16 +20,15 @@ export function getDaysInYear(year: number): number {
 }
 
 /**
- * Get all dates in a year
+ * Get all dates in a year (timezone-safe, uses local time)
  */
 export function getAllDatesInYear(year: number): Date[] {
   const dates: Date[] = [];
-  const startDate = new Date(year, 0, 1);
   const daysInYear = getDaysInYear(year);
 
   for (let i = 0; i < daysInYear; i++) {
-    const date = new Date(year, 0, 1);
-    date.setDate(startDate.getDate() + i);
+    // Create date in local timezone
+    const date = new Date(year, 0, 1 + i);
     dates.push(date);
   }
 
@@ -30,7 +36,7 @@ export function getAllDatesInYear(year: number): Date[] {
 }
 
 /**
- * Format date to YYYY-MM-DD
+ * Format date to YYYY-MM-DD string (timezone-safe)
  */
 export function formatDate(date: Date): string {
   const year = date.getFullYear();
@@ -40,10 +46,41 @@ export function formatDate(date: Date): string {
 }
 
 /**
+ * Parse date string (YYYY-MM-DD) to local Date object
+ * IMPORTANT: This creates a date in LOCAL time, not UTC
+ * to avoid timezone offset issues
+ */
+export function parseDateString(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  // Using new Date(year, month-1, day) creates a LOCAL date
+  return new Date(year, month - 1, day);
+}
+
+/**
+ * Safely compare two date strings or a date with a string
+ * Returns true if eventDate falls within the range (inclusive)
+ */
+export function isDateInRange(
+  eventDate: string,
+  rangeStart: string,
+  rangeEnd: string
+): boolean {
+  return eventDate >= rangeStart && eventDate <= rangeEnd;
+}
+
+/**
  * Get day of week abbreviation
  */
 export function getDayOfWeek(date: Date): string {
   const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  return days[date.getDay()];
+}
+
+/**
+ * Get full day of week name
+ */
+export function getDayOfWeekFull(date: Date): string {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return days[date.getDay()];
 }
 
@@ -59,7 +96,18 @@ export function getMonthName(monthIndex: number): string {
 }
 
 /**
- * Check if a date is today
+ * Get full month name
+ */
+export function getMonthNameFull(monthIndex: number): string {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  return months[monthIndex];
+}
+
+/**
+ * Check if a date is today (timezone-safe)
  */
 export function isToday(date: Date): boolean {
   const today = new Date();
@@ -71,19 +119,17 @@ export function isToday(date: Date): boolean {
 }
 
 /**
- * Parse date string (YYYY-MM-DD) to Date
+ * Legacy alias for parseDateString
+ * @deprecated Use parseDateString instead
  */
-export function parseDate(dateString: string): Date {
-  const [year, month, day] = dateString.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
+export const parseDate = parseDateString;
 
 /**
  * Group dates by month
  */
 export function groupDatesByMonth(dates: Date[]): Map<number, Date[]> {
   const grouped = new Map<number, Date[]>();
-  
+
   dates.forEach(date => {
     const month = date.getMonth();
     if (!grouped.has(month)) {
@@ -91,6 +137,15 @@ export function groupDatesByMonth(dates: Date[]): Map<number, Date[]> {
     }
     grouped.get(month)!.push(date);
   });
-  
+
   return grouped;
 }
+
+/**
+ * Format a date string for display (short format)
+ */
+export function formatDateForDisplay(dateString: string): string {
+  const date = parseDateString(dateString);
+  return `${getMonthName(date.getMonth())} ${date.getDate()}`;
+}
+

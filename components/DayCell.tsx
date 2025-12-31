@@ -1,7 +1,7 @@
 'use client';
 
 import { Event, Category } from '@/lib/instant';
-import { isToday, getDayOfWeek } from '@/lib/dateUtils';
+import { isToday, getDayOfWeek, formatDate } from '@/lib/dateUtils';
 
 interface DayCellProps {
   date: Date;
@@ -11,19 +11,33 @@ interface DayCellProps {
   onDayClick: (date: Date) => void;
 }
 
-export default function DayCell({ date, events, categories, visibleCategoryIds, onDayClick }: DayCellProps) {
+export default function DayCell({ date, onDayClick }: DayCellProps) {
   const dayOfWeek = getDayOfWeek(date);
   const isCurrentDay = isToday(date);
   const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday or Saturday
+  const dateStr = formatDate(date);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onDayClick(date);
+    }
+  };
 
   return (
     <div
       onClick={() => onDayClick(date)}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-label={`${date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`}
+      data-day-cell
+      data-date={dateStr}
       className={`
         relative transition-colors duration-200 cursor-pointer
-        h-full hover:bg-neutral-50
-        ${isCurrentDay 
-          ? 'bg-green-50 border border-green-600' 
+        h-full hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500
+        ${isCurrentDay
+          ? 'bg-green-50 border border-green-600'
           : 'border-r border-neutral-100'
         }
         ${isWeekend && !isCurrentDay ? 'bg-neutral-100' : ''}
@@ -41,3 +55,4 @@ export default function DayCell({ date, events, categories, visibleCategoryIds, 
     </div>
   );
 }
+
