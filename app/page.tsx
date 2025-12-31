@@ -6,6 +6,7 @@ import YearGrid from '@/components/YearGrid';
 import EventModal from '@/components/EventModal';
 import CategoryModal from '@/components/CategoryModal';
 import DayDetailModal from '@/components/DayDetailModal';
+import DisplayOptionsModal from '@/components/DisplayOptionsModal';
 import GoogleCalendarSync from '@/components/GoogleCalendarSync';
 import { CalendarSkeleton } from '@/components/Skeleton';
 import { ToastProvider } from '@/contexts/ToastContext';
@@ -40,18 +41,16 @@ function CalendarApp() {
         onAddCategory={actions.handleAddCategory}
         onEditCategory={actions.handleEditCategory}
         onAddEvent={actions.handleAddEvent}
+        onOpenDisplayOptions={() => state.setIsDisplayOptionsOpen(true)}
+
+        // Google Calendar Props
+        onImportEvents={actions.handleImportGoogleEvents}
+        onDeleteGoogleEvents={actions.handleDeleteGoogleEvents}
+        googleCalendarCategoryId={state.googleCalendarCategoryId}
+        onCreateGoogleCategory={actions.handleCreateGoogleCategory}
       />
 
       <div className="max-w-[1800px] mx-auto px-2 py-4">
-        <div className="mb-4 flex justify-end">
-          <GoogleCalendarSync
-            year={state.selectedYear}
-            onImportEvents={actions.handleImportGoogleEvents}
-            onDeleteGoogleEvents={actions.handleDeleteGoogleEvents}
-            googleCalendarCategoryId={state.googleCalendarCategoryId}
-            onCreateGoogleCategory={actions.handleCreateGoogleCategory}
-          />
-        </div>
       </div>
 
       <main className="max-w-[1800px] mx-auto px-2 py-2">
@@ -65,6 +64,9 @@ function CalendarApp() {
             visibleCategoryIds={state.visibleCategoryIds}
             onDayClick={actions.handleDayClick}
             onEventClick={actions.handleEditEvent}
+            showHolidays={state.showHolidays}
+            showLongWeekends={state.showLongWeekends}
+            showPastDatesAsGray={state.showPastDatesAsGray}
           />
         )}
       </main>
@@ -95,6 +97,17 @@ function CalendarApp() {
         categories={categories}
         onEditEvent={actions.handleEditEvent}
         onAddEvent={actions.handleAddEventFromDayDetail}
+      />
+
+      <DisplayOptionsModal
+        isOpen={state.isDisplayOptionsOpen}
+        onClose={() => state.setIsDisplayOptionsOpen(false)}
+        showPastDatesAsGray={state.showPastDatesAsGray}
+        setShowPastDatesAsGray={state.setShowPastDatesAsGray}
+        showHolidays={state.showHolidays}
+        setShowHolidays={state.setShowHolidays}
+        showLongWeekends={state.showLongWeekends}
+        setShowLongWeekends={state.setShowLongWeekends}
       />
     </div>
   );

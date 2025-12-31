@@ -12,9 +12,22 @@ interface YearGridProps {
   visibleCategoryIds: Set<string>;
   onDayClick: (date: Date) => void;
   onEventClick: (event: Event) => void;
+  showHolidays?: boolean;
+  showLongWeekends?: boolean;
+  showPastDatesAsGray?: boolean;
 }
 
-export default function YearGrid({ year, events, categories, visibleCategoryIds, onDayClick, onEventClick }: YearGridProps) {
+export default function YearGrid({
+  year,
+  events,
+  categories,
+  visibleCategoryIds,
+  onDayClick,
+  onEventClick,
+  showHolidays = true,
+  showLongWeekends = true,
+  showPastDatesAsGray = true,
+}: YearGridProps) {
   const dates = useMemo(() => getAllDatesInYear(year), [year]);
 
   // Get visible events only
@@ -107,6 +120,9 @@ export default function YearGrid({ year, events, categories, visibleCategoryIds,
                       categories={categories}
                       visibleCategoryIds={visibleCategoryIds}
                       onDayClick={onDayClick}
+                      showHolidays={showHolidays}
+                      showLongWeekends={showLongWeekends}
+                      showPastDatesAsGray={showPastDatesAsGray}
                     />
                   );
                 })}

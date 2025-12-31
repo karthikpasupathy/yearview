@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Category } from '@/lib/instant';
-import { db } from '@/lib/instant';
+import { Category, Event, db } from '@/lib/instant';
+import GoogleCalendarSync from './GoogleCalendarSync';
 
 interface HeaderProps {
   year: number;
@@ -13,6 +13,12 @@ interface HeaderProps {
   onAddCategory: () => void;
   onEditCategory: (category: Category) => void;
   onAddEvent: () => void;
+  onOpenDisplayOptions: () => void;
+  // Google Calendar Props
+  onImportEvents: (events: Partial<Event>[], categoryId: string) => void;
+  onDeleteGoogleEvents: (categoryId: string) => void;
+  googleCalendarCategoryId: string | null;
+  onCreateGoogleCategory: () => string;
 }
 
 export default function Header({
@@ -24,6 +30,11 @@ export default function Header({
   onAddCategory,
   onEditCategory,
   onAddEvent,
+  onOpenDisplayOptions,
+  onImportEvents,
+  onDeleteGoogleEvents,
+  googleCalendarCategoryId,
+  onCreateGoogleCategory,
 }: HeaderProps) {
   const { user } = db.useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -198,19 +209,38 @@ export default function Header({
             </button>
           </div>
 
-          <button
-            onClick={() => {
-              const today = new Date();
-              onYearChange(today.getFullYear());
-              setTimeout(() => {
-                const todayElement = document.querySelector('[class*="bg-green-50"]');
-                todayElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 100);
-            }}
-            className="px-4 py-2 bg-neutral-200 text-neutral-800 rounded-xl font-medium hover:bg-neutral-300 transition-all text-sm"
-          >
-            Today ({currentYear})
-          </button>
+          <div className="flex items-center space-x-2">
+            <GoogleCalendarSync
+              year={year}
+              onImportEvents={onImportEvents}
+              onDeleteGoogleEvents={onDeleteGoogleEvents}
+              googleCalendarCategoryId={googleCalendarCategoryId}
+              onCreateGoogleCategory={onCreateGoogleCategory}
+            />
+            <button
+              onClick={onOpenDisplayOptions}
+              className="px-3 py-2 bg-neutral-100 text-neutral-700 rounded-xl font-medium hover:bg-neutral-200 transition-all text-sm flex items-center justify-center"
+              title="Display Options"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                const today = new Date();
+                onYearChange(today.getFullYear());
+                setTimeout(() => {
+                  const todayElement = document.querySelector('[class*="bg-green-50"]');
+                  todayElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+              }}
+              className="px-4 py-2 bg-neutral-200 text-neutral-800 rounded-xl font-medium hover:bg-neutral-300 transition-all text-sm"
+            >
+              Today ({currentYear})
+            </button>
+          </div>
         </div>
 
         {/* Mobile Categories Dropdown */}

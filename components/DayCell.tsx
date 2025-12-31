@@ -10,19 +10,33 @@ interface DayCellProps {
   categories: Category[];
   visibleCategoryIds: Set<string>;
   onDayClick: (date: Date) => void;
+  showHolidays?: boolean;
+  showLongWeekends?: boolean;
+  showPastDatesAsGray?: boolean;
 }
 
-export default function DayCell({ date, onDayClick }: DayCellProps) {
+export default function DayCell({
+  date,
+  onDayClick,
+  showHolidays = true,
+  showLongWeekends = true,
+  showPastDatesAsGray = true,
+}: DayCellProps) {
   const dayOfWeek = getDayOfWeek(date);
   const isCurrentDay = isToday(date);
   const isWeekend = date.getDay() === 0 || date.getDay() === 6; // Sunday or Saturday
   const dateStr = formatDate(date);
 
-  // Holiday checks
-  const isHolidayDay = isHoliday(date);
-  const isExtendedWeekendDay = isExtendedWeekend(date);
-  const holidayName = getHolidayName(date);
-  const extendedWeekendName = getExtendedWeekendHolidayName(date);
+  // Check if date is in the past
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const isPast = date < today;
+
+  // Holiday checks - only if showHolidays is enabled
+  const isHolidayDay = showHolidays && isHoliday(date);
+  const isExtendedWeekendDay = showLongWeekends && isExtendedWeekend(date);
+  const holidayName = showHolidays ? getHolidayName(date) : null;
+  const extendedWeekendName = showLongWeekends ? getExtendedWeekendHolidayName(date) : null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -57,6 +71,9 @@ export default function DayCell({ date, onDayClick }: DayCellProps) {
     return baseTitle;
   };
 
+  // Apply past date styling
+  const pastOpacity = isPast && showPastDatesAsGray && !isCurrentDay ? 'opacity-50' : '';
+
   return (
     <div
       onClick={() => onDayClick(date)}
@@ -70,7 +87,7 @@ export default function DayCell({ date, onDayClick }: DayCellProps) {
       className={`
         relative transition-colors duration-200 cursor-pointer
         h-full hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500
-        ${getBackgroundClass()}
+        ${getBackgroundClass()} ${pastOpacity}
       `}
     >
       <div className="px-1 py-1">
@@ -89,4 +106,3 @@ export default function DayCell({ date, onDayClick }: DayCellProps) {
     </div>
   );
 }
-

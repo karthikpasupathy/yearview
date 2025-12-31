@@ -16,6 +16,8 @@ export interface CalendarState {
     setIsCategoryModalOpen: (open: boolean) => void;
     isDayDetailModalOpen: boolean;
     setIsDayDetailModalOpen: (open: boolean) => void;
+    isDisplayOptionsOpen: boolean;
+    setIsDisplayOptionsOpen: (open: boolean) => void;
     selectedEvent: Event | null;
     setSelectedEvent: (event: Event | null) => void;
     selectedCategory: Category | null;
@@ -24,6 +26,13 @@ export interface CalendarState {
     setSelectedDate: (date: Date | null) => void;
     googleCalendarCategoryId: string | null;
     setGoogleCalendarCategoryId: (id: string | null) => void;
+    // Display options
+    showPastDatesAsGray: boolean;
+    setShowPastDatesAsGray: (show: boolean) => void;
+    showHolidays: boolean;
+    setShowHolidays: (show: boolean) => void;
+    showLongWeekends: boolean;
+    setShowLongWeekends: (show: boolean) => void;
 }
 
 export interface CalendarData {
@@ -41,10 +50,16 @@ export function useCalendarState(): CalendarState {
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
     const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
     const [isDayDetailModalOpen, setIsDayDetailModalOpen] = useState(false);
+    const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [googleCalendarCategoryId, setGoogleCalendarCategoryId] = useState<string | null>(null);
+
+    // Display options state
+    const [showPastDatesAsGray, setShowPastDatesAsGray] = useState(true);
+    const [showHolidays, setShowHolidays] = useState(true);
+    const [showLongWeekends, setShowLongWeekends] = useState(true);
 
     return {
         selectedYear,
@@ -57,6 +72,8 @@ export function useCalendarState(): CalendarState {
         setIsCategoryModalOpen,
         isDayDetailModalOpen,
         setIsDayDetailModalOpen,
+        isDisplayOptionsOpen,
+        setIsDisplayOptionsOpen,
         selectedEvent,
         setSelectedEvent,
         selectedCategory,
@@ -65,6 +82,13 @@ export function useCalendarState(): CalendarState {
         setSelectedDate,
         googleCalendarCategoryId,
         setGoogleCalendarCategoryId,
+        // Display options
+        showPastDatesAsGray,
+        setShowPastDatesAsGray,
+        showHolidays,
+        setShowHolidays,
+        showLongWeekends,
+        setShowLongWeekends,
     };
 }
 
