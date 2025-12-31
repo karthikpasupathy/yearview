@@ -3,7 +3,7 @@
 import { useCallback } from 'react';
 import { db } from '@/lib/instant';
 import { v4 as uuidv4 } from 'uuid';
-import type { Event, Category, CustomHoliday } from '@/lib/instant';
+import type { Event, Category, CustomHoliday, DayNote } from '@/lib/instant';
 import { useToast } from '@/contexts/ToastContext';
 import type { CalendarState } from './useCalendarState';
 import { GOOGLE_CALENDAR_CATEGORY_NAME, GOOGLE_CALENDAR_COLOR } from '@/lib/constants';
@@ -337,6 +337,51 @@ export function useCalendarActions(
         }
     }, [showToast]);
 
+    const handleSaveDayNote = useCallback((noteData: Partial<DayNote>) => {
+        if (!user) return;
+
+        try {
+            if (noteData.id) {
+                // Update existing note
+                (db.transact as any)(
+                    (db.tx as any).dayNotes[noteData.id].update({
+                        date: noteData.date!,
+                        note: noteData.note!,
+                        isHighlighted: !!noteData.isHighlighted,
+                        updatedAt: Date.now(),
+                    })
+                );
+                showToast('Note saved', 'success');
+            } else {
+                // Create new note
+                const newNote = {
+                    id: uuidv4(),
+                    date: noteData.date!,
+                    note: noteData.note!,
+                    isHighlighted: !!noteData.isHighlighted,
+                    userId: user.id,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now(),
+                };
+                (db.transact as any)((db.tx as any).dayNotes[newNote.id].update(newNote));
+                showToast('Note added', 'success');
+            }
+        } catch (error) {
+            showToast('Failed to save note', 'error');
+            console.error('Error saving note:', error);
+        }
+    }, [user, showToast]);
+
+    const handleDeleteDayNote = useCallback((noteId: string) => {
+        try {
+            (db.transact as any)((db.tx as any).dayNotes[noteId].delete());
+            showToast('Note deleted', 'info');
+        } catch (error) {
+            showToast('Failed to delete note', 'error');
+            console.error('Error deleting note:', error);
+        }
+    }, [showToast]);
+
     const handleAddEventFromDayDetail = useCallback(() => {
         state.setIsDayDetailModalOpen(false);
         state.setSelectedEvent(null);
@@ -363,5 +408,7 @@ export function useCalendarActions(
         handleAddEventFromDayDetail,
         handleSaveCustomHoliday,
         handleDeleteCustomHoliday,
+        handleSaveDayNote,
+        handleDeleteDayNote,
     };
 }

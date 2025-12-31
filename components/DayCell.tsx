@@ -1,6 +1,6 @@
 'use client';
 
-import { Event, Category, CustomHoliday } from '@/lib/instant';
+import { Event, Category, CustomHoliday, DayNote } from '@/lib/instant';
 import { isToday, getDayOfWeek, formatDate } from '@/lib/dateUtils';
 import { isHoliday, isExtendedWeekend, getHolidayName, getExtendedWeekendHolidayName } from '@/lib/holidays';
 
@@ -10,6 +10,7 @@ interface DayCellProps {
   categories: Category[];
   visibleCategoryIds: Set<string>;
   customHolidays?: CustomHoliday[];
+  dayNotes?: DayNote[];
   onDayClick: (date: Date) => void;
   showHolidays?: boolean;
   showLongWeekends?: boolean;
@@ -21,6 +22,7 @@ export default function DayCell({
   visibleCategoryIds,
   onDayClick,
   customHolidays = [],
+  dayNotes = [],
   showHolidays = true,
   showLongWeekends = true,
   showPastDatesAsGray = true,
@@ -41,6 +43,10 @@ export default function DayCell({
   const holidayName = showHolidays ? getHolidayName(date, customHolidays) : null;
   const extendedWeekendName = showLongWeekends ? getExtendedWeekendHolidayName(date, customHolidays) : null;
 
+  // Check for day note highlight
+  const dayNote = dayNotes.find(n => n.date === dateStr);
+  const isHighlighted = dayNote?.isHighlighted;
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -52,6 +58,7 @@ export default function DayCell({
   const getBackgroundClass = () => {
     if (isCurrentDay) return 'bg-green-50 border border-green-600';
     if (isHolidayDay) return 'bg-red-100 border-r border-red-200';
+    if (isHighlighted) return 'bg-blue-50 border-r border-blue-200';
     if (isExtendedWeekendDay) return 'bg-red-50 border-r border-red-100';
     if (isWeekend) return 'bg-neutral-100 border-r border-neutral-100';
     return 'bg-white border-r border-neutral-100';
@@ -62,6 +69,7 @@ export default function DayCell({
     if (isCurrentDay) return 'text-green-600 font-semibold';
     if (isHolidayDay) return 'text-red-700 font-semibold';
     if (isExtendedWeekendDay) return 'text-red-600';
+    if (isHighlighted) return 'text-blue-700 font-medium';
     if (isWeekend) return 'text-neutral-500';
     return 'text-neutral-700';
   };
@@ -99,9 +107,9 @@ export default function DayCell({
             <span>{date.getDate()}</span>
             <span className="text-[8px] opacity-60">{dayOfWeek}</span>
           </div>
-          {holidayName && (
-            <div className="text-[7px] text-red-600 font-medium truncate mt-0.5 leading-tight">
-              {holidayName}
+          {(dayNote?.note || holidayName) && (
+            <div className={`text-[7px] font-medium truncate mt-0.5 leading-tight ${dayNote?.note ? 'text-blue-700' : 'text-red-600'}`}>
+              {dayNote?.note || holidayName}
             </div>
           )}
         </div>

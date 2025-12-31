@@ -33,5 +33,15 @@ export type CustomHoliday = {
   createdAt: number;
 };
 
+export type DayNote = {
+  id: string;
+  date: string; // ISO date string (YYYY-MM-DD)
+  note: string;
+  isHighlighted: boolean;
+  userId: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 // Initialize InstantDB (without schema for now - schema is managed in InstantDB dashboard)
 export const db = init({ appId: APP_ID });

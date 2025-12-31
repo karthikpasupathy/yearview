@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { db } from '@/lib/instant';
-import type { Event, Category, CustomHoliday } from '@/lib/instant';
+import type { Event, Category, CustomHoliday, DayNote } from '@/lib/instant';
 import { GOOGLE_CALENDAR_CATEGORY_NAME } from '@/lib/constants';
 
 export interface CalendarState {
@@ -40,6 +40,7 @@ export interface CalendarData {
     events: Event[];
     allEvents: Event[];
     customHolidays: CustomHoliday[];
+    dayNotes: DayNote[];
     isLoading: boolean;
 }
 
@@ -122,6 +123,13 @@ export function useCalendarData(selectedYear: number): CalendarData {
                         },
                     },
                 },
+                dayNotes: {
+                    $: {
+                        where: {
+                            userId: user.id,
+                        },
+                    },
+                },
             }
             : ({} as any)
     );
@@ -129,6 +137,7 @@ export function useCalendarData(selectedYear: number): CalendarData {
     const categories: Category[] = (data?.categories as Category[]) || [];
     const allEvents: Event[] = (data?.events as Event[]) || [];
     const customHolidays: CustomHoliday[] = (data?.customHolidays as CustomHoliday[]) || [];
+    const dayNotes: DayNote[] = (data?.dayNotes as DayNote[]) || [];
 
     // Filter events for selected year (still needed for year filtering)
     const events = useMemo(() =>
@@ -143,6 +152,7 @@ export function useCalendarData(selectedYear: number): CalendarData {
         events,
         allEvents,
         customHolidays,
+        dayNotes,
         isLoading,
     };
 }

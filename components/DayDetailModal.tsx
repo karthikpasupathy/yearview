@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-import { Event, Category, CustomHoliday } from '@/lib/instant';
+import { Event, Category, CustomHoliday, DayNote } from '@/lib/instant';
 import { getDayOfWeek, getMonthName, formatDate } from '@/lib/dateUtils';
 import { getHolidayName, isExtendedWeekend, getExtendedWeekendHolidayName } from '@/lib/holidays';
 import { useFocusTrap } from '@/hooks/useAccessibility';
@@ -14,10 +14,13 @@ interface DayDetailModalProps {
   events: Event[];
   categories: Category[];
   customHolidays?: CustomHoliday[];
+  dayNotes?: DayNote[];
   onEditEvent: (event: Event) => void;
   onAddEvent: () => void;
   onSaveHoliday?: (holiday: Partial<CustomHoliday>) => void;
   onDeleteHoliday?: (id: string) => void;
+  onSaveDayNote?: (note: Partial<DayNote>) => void;
+  onDeleteDayNote?: (id: string) => void;
 }
 
 export default function DayDetailModal({
@@ -27,25 +30,45 @@ export default function DayDetailModal({
   events,
   categories,
   customHolidays = [],
+  dayNotes = [],
   onEditEvent,
   onAddEvent,
   onSaveHoliday,
   onDeleteHoliday,
+  onSaveDayNote,
+  onDeleteDayNote,
 }: DayDetailModalProps) {
   const focusTrapRef = useFocusTrap(isOpen, onClose);
 
   // Find if there is a custom holiday for this date
   const dateStr = date ? formatDate(date) : '';
   const currentHoliday = customHolidays.find(h => h.date === dateStr);
-  const [note, setNote] = useState('');
+  const currentNote = dayNotes.find(n => n.date === dateStr);
+
+  const [holidayNote, setHolidayNote] = useState('');
+  const [dayNoteText, setDayNoteText] = useState('');
+  const [isHighlighted, setIsHighlighted] = useState(false);
+  const [isNoteExpanded, setIsNoteExpanded] = useState(false);
 
   useEffect(() => {
     if (currentHoliday) {
-      setNote(currentHoliday.note);
+      setHolidayNote(currentHoliday.note);
     } else {
-      setNote('');
+      setHolidayNote('');
     }
   }, [currentHoliday]);
+
+  useEffect(() => {
+    if (currentNote) {
+      setDayNoteText(currentNote.note);
+      setIsHighlighted(currentNote.isHighlighted);
+      setIsNoteExpanded(true);
+    } else {
+      setDayNoteText('');
+      setIsHighlighted(false);
+      setIsNoteExpanded(false);
+    }
+  }, [currentNote]);
 
   const handleHolidayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!date || !onSaveHoliday || !onDeleteHoliday) return;
@@ -64,13 +87,42 @@ export default function DayDetailModal({
     }
   };
 
-  const handleSaveNote = () => {
+  const handleSaveHolidayNote = () => {
     if (!date || !onSaveHoliday || !currentHoliday) return;
     onSaveHoliday({
       id: currentHoliday.id,
       date: dateStr,
-      note: note
+      note: holidayNote
     });
+  };
+
+  const handleSaveDayNoteWrapper = () => {
+    if (!date || !onSaveDayNote) return;
+
+    // If text is empty and highlight is off, treat as delete
+    if (!dayNoteText.trim() && !isHighlighted && currentNote) {
+      onDeleteDayNote && onDeleteDayNote(currentNote.id);
+      return;
+    }
+
+    onSaveDayNote({
+      id: currentNote?.id,
+      date: dateStr,
+      note: dayNoteText,
+      isHighlighted: isHighlighted
+    });
+  };
+
+  const toggleHighlight = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsHighlighted(e.target.checked);
+    // Auto-save when toggling highlight if note exists or just saving highlight
+    if (currentNote) {
+      onSaveDayNote && onSaveDayNote({
+        ...currentNote,
+        isHighlighted: e.target.checked,
+        updatedAt: Date.now()
+      });
+    }
   };
 
   if (!isOpen || !date) return null;
@@ -123,41 +175,109 @@ export default function DayDetailModal({
             </button>
           </div>
 
-          {/* Custom Holiday Section */}
-          <div className="mt-4 pt-4 border-t border-neutral-100">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="is-holiday"
-                checked={!!currentHoliday}
-                onChange={handleHolidayChange}
-                className="rounded border-neutral-300 text-red-600 focus:ring-red-500"
-              />
-              <label htmlFor="is-holiday" className="text-sm font-medium text-stone-700">
-                Mark as Holiday
-              </label>
+          <div className="mt-4 pt-4 border-t border-neutral-100 space-y-4">
+            {/* Day Note Section */}
+            <div>
+              {!isNoteExpanded && !currentNote ? (
+                <button
+                  onClick={() => setIsNoteExpanded(true)}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Add Note
+                </button>
+              ) : (
+                <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                  <div className="flex justify-between items-start mb-2">
+                    <label className="block text-xs font-semibold text-blue-800 uppercase tracking-wider">Day Note</label>
+                    <button
+                      onClick={() => {
+                        if (!currentNote) {
+                          setIsNoteExpanded(false);
+                          setDayNoteText('');
+                          setIsHighlighted(false);
+                        }
+                      }}
+                      className="text-blue-400 hover:text-blue-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <textarea
+                    value={dayNoteText}
+                    onChange={(e) => setDayNoteText(e.target.value.slice(0, 100))}
+                    className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white mb-2"
+                    placeholder="Add a note... (max 100 chars)"
+                    rows={2}
+                    maxLength={100}
+                  />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="highlight-day"
+                        checked={isHighlighted}
+                        onChange={toggleHighlight}
+                        className="rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="highlight-day" className="text-xs font-medium text-stone-600 cursor-pointer select-none">
+                        Highlight Day
+                      </label>
+                    </div>
+                    <button
+                      onClick={handleSaveDayNoteWrapper}
+                      className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      Save Note
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-right text-stone-400 mt-1">
+                    {dayNoteText.length}/100
+                  </div>
+                </div>
+              )}
             </div>
 
-            {currentHoliday && (
-              <div className="mt-3">
-                <label className="block text-xs font-medium text-stone-500 mb-1">Holiday Note</label>
-                <div className="flex gap-2">
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-1 focus:ring-stone-400"
-                    placeholder="Enter holiday name..."
-                    rows={1}
-                  />
-                  <button
-                    onClick={handleSaveNote}
-                    className="px-4 py-2 bg-stone-800 text-white text-sm rounded-lg hover:bg-stone-700 transition-colors"
-                  >
-                    Save
-                  </button>
-                </div>
+            {/* Custom Holiday Section */}
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <input
+                  type="checkbox"
+                  id="is-holiday"
+                  checked={!!currentHoliday}
+                  onChange={handleHolidayChange}
+                  className="rounded border-neutral-300 text-red-600 focus:ring-red-500"
+                />
+                <label htmlFor="is-holiday" className="text-sm font-medium text-stone-700 select-none cursor-pointer">
+                  Mark as Holiday
+                </label>
               </div>
-            )}
+
+              {currentHoliday && (
+                <div className="pl-6">
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Holiday Name</label>
+                  <div className="flex gap-2">
+                    <textarea
+                      value={holidayNote}
+                      onChange={(e) => setHolidayNote(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-neutral-200 rounded-lg text-sm text-stone-700 focus:outline-none focus:ring-1 focus:ring-stone-400"
+                      placeholder="Enter holiday name..."
+                      rows={1}
+                    />
+                    <button
+                      onClick={handleSaveHolidayNote}
+                      className="px-4 py-2 bg-stone-800 text-white text-sm rounded-lg hover:bg-stone-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
