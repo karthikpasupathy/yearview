@@ -1,8 +1,8 @@
-# YearMap 📅
+# YearView 📅
 
 A beautiful annual calendar app to visualize and organize your entire year. Built with Next.js, InstantDB, and Tailwind CSS.
 
-![YearMap Screenshot](https://via.placeholder.com/800x400?text=YearMap+Screenshot)
+![YearView Screenshot](https://via.placeholder.com/800x400?text=YearView+Screenshot)
 
 ## Features
 
@@ -19,8 +19,8 @@ A beautiful annual calendar app to visualize and organize your entire year. Buil
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/karthikpasupathy/yearmap.git
-cd yearmap
+git clone https://github.com/karthikpasupathy/yearview.git
+cd yearview
 npm install
 ```
 
@@ -97,7 +97,7 @@ To enable Google Calendar sync:
 ## Project Structure
 
 ```
-yearmap/
+yearview/
 ├── app/                # Next.js app router pages
 ├── components/         # React components
 ├── contexts/           # React contexts (Toast)

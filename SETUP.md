@@ -91,7 +91,7 @@ The application will be available at http://localhost:3000
 ## Project Structure
 
 ```
-yearmap/
+yearview/
 ├── app/
 │   ├── page.tsx          # Main calendar page
 │   ├── layout.tsx        # Root layout with metadata
